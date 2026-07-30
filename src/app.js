@@ -1,0 +1,81 @@
+require("dotenv").config();
+const express = require("express");
+const cors    = require("cors");
+const morgan  = require("morgan");
+const db      = require("./config/db");
+
+const { initFirebase } = require("./config/firebase");
+
+const app = express();
+
+/* ── Middleware ─────────────────────────────────────────── */
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "https://financereactjs.vercel.app/",
+  credentials: true,
+}));
+app.use(express.json());
+app.use(morgan("dev"));
+
+/* ── Routes ─────────────────────────────────────────────── */
+app.use("/api/auth",         require("./routes/auth"));
+app.use("/api/profile",      require("./routes/profile"));
+app.use("/api/students",     require("./routes/students"));
+app.use("/api/teachers",     require("./routes/teachers"));
+app.use("/api/inquiries",    require("./routes/inquiries"));
+app.use("/api/appointments", require("./routes/appointments"));
+app.use("/api/invoices",     require("./routes/invoices"));
+app.use("/api/finance",      require("./routes/finance"));
+app.use("/api/dashboard",    require("./routes/dashboard"));
+app.use("/api/teacher-updates/public", require("./routes/teacherUpdatePublic"));
+app.use("/api/admissions/public",  require("./routes/admissionPublic"));
+app.use("/api/inquiries/public",  require("./routes/inquiryPublic"));
+
+/* ── Phase 1 Routes ─────────────────────────────────────── */
+app.use("/api/auth/student", require("./routes/studentAuthRoutes"));
+app.use("/api/dashboard/student", require("./routes/studentDashboardRoutes"));
+app.use("/api/recycle-bin", require("./routes/recycleBinRoutes"));
+app.use("/api/homework", require("./routes/homework"));
+app.use("/api/teaching-logs", require("./routes/teachingLogs"));
+app.use("/api/chat-groups", require("./routes/chatGroups"));
+app.use("/api/chat-messages", require("./routes/chatMessages"));
+app.use("/api/notifications", require("./routes/notifications"));
+
+/* ── Health check ───────────────────────────────────────── */
+app.get("/api/health", (_req, res) =>
+  res.json({ success: true, message: "InstituteMS API running", ts: new Date() })
+);
+
+/* ── 404 handler ────────────────────────────────────────── */
+app.use((_req, res) =>
+  res.status(404).json({ success: false, message: "Route not found" })
+);
+
+/* ── Global error handler ───────────────────────────────── */
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({ success: false, message: err.message || "Internal Server Error" });
+});
+
+/* ── Boot ───────────────────────────────────────────────── */
+const PORT = process.env.PORT || 5001;
+
+(async () => {
+  try {
+    await db.testConnection();
+    console.log("✅ MySQL connected");
+
+    // Initialize Firebase Admin SDK
+    initFirebase();
+
+    app.listen(PORT, () => {
+      console.log(`\n🚀 InstituteMS backend  →  http://localhost:${PORT}`);
+      console.log(`   ENV : ${process.env.NODE_ENV || "development"}`);
+      console.log(`   DB  : ${process.env.DB_NAME}@${process.env.DB_HOST}\n`);
+    });
+  } catch (err) {
+    console.error("❌ Cannot connect to MySQL:", err.message);
+    console.error("   Make sure MySQL is running and .env credentials are correct.");
+    process.exit(1);
+  }
+})();

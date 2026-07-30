@@ -1,0 +1,114 @@
+{
+  "branches": [
+    {
+      "branch_id": 1,
+      "branch_name": "Akurdi"
+    },
+    {
+      "branch_id": 2,
+      "branch_name": "Wakad"
+    },
+    {
+      "branch_id": 3,
+      "branch_name": "Thergaon"
+    }
+  ],
+  "batches": [
+    {
+      "batch_id": 1,
+      "branch_id": 1,
+      "batch_name": "Morning Batch (7AM – 9AM)",
+      "start_time": "07:00:00",
+      "end_time": "09:00:00",
+      "batch_start_date": "2026-01-01",
+      "batch_end_date": "2026-12-31"
+    },
+    {
+      "batch_id": 2,
+      "branch_id": 1,
+      "batch_name": "Evening Batch (5PM – 7PM)",
+      "start_time": "17:00:00",
+      "end_time": "19:00:00",
+      "batch_start_date": "2026-01-01",
+      "batch_end_date": "2026-12-31"
+    }
+  ],
+  "boards": [
+    {
+      "board_id": 1,
+      "name": "CBSE"
+    },
+    {
+      "board_id": 2,
+      "name": "ICSE"
+    }
+  ],
+  "standards": [
+    {
+      "stand_id": 1,
+      "board_id": 1,
+      "batch_id": 1,
+      "branch_id": 1,
+      "name": "10th Standard"
+    },
+    {
+      "stand_id": 2,
+      "board_id": 1,
+      "batch_id": 1,
+      "branch_id": 1,
+      "name": "12th Standard"
+    }
+  ],
+  "subjects": [
+    {
+      "sub_id": 1,
+      "stand_id": 1,
+      "branch_id": 1,
+      "batch_id": 1,
+      "board_id": 1,
+      "name": "Physics",
+      "teacher_name": "Dr. Anil Mehta"
+    },
+    {
+      "sub_id": 2,
+      "stand_id": 1,
+      "branch_id": 1,
+      "batch_id": 1,
+      "board_id": 1,
+      "name": "Chemistry",
+      "teacher_name": "Mrs. Sunita Rao"
+    }
+  ],
+  "chapters": [
+    {
+      "chap_id": 1,
+      "sub_id": 1,
+      "stand_id": 1,
+      "branch_id": 1,
+      "batch_id": 1,
+      "board_id": 1,
+      "name": "Laws of Motion",
+      "description": "Newton's laws and mechanics.",
+      "topics": [
+        {
+          "name": "First Law",
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-05"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "note_id": 1,
+      "chap_id": 1,
+      "sub_id": 1,
+      "stand_id": 1,
+      "branch_id": 1,
+      "batch_id": 1,
+      "board_id": 1,
+      "title": "Laws of Motion Revision PDF",
+      "file_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+    }
+  ]
+}
