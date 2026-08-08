@@ -64,7 +64,7 @@ app.use("/api/recycle-bin", require("./routes/recycleBinRoutes"));
 app.use("/api/homework", require("./routes/homework"));
 app.use("/api/teaching-logs", require("./routes/teachingLogs"));
 app.use("/api/chat-groups", require("./routes/chatGroups"));
-app.use("/api/chat-messages", require("./routes/chatMessages"));
+// app.use("/api/chat-messages", require("./routes/chatMessages"));
 
 /* ── Health check ───────────────────────────────────────── */
 app.get("/api/health", (_req, res) => {
@@ -115,8 +115,12 @@ const PORT = process.env.PORT || 5001;
     const server = http.createServer(app);
 
     // Initialize Socket.io
-    const socketConfig = require("./config/socket");
-    socketConfig.init(server);
+    // const socketConfig = require("./config/socket");
+    // socketConfig.init(server);
+
+    // Start Smart Office background watcher
+    const { startWatcher } = require("./services/smartOfficeWatcher");
+    startWatcher();
 
     server.listen(PORT, () => {
       console.log(`\n🚀 Backend running → http://localhost:${PORT}`);
