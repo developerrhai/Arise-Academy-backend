@@ -25,7 +25,7 @@ async function seed() {
     "finance_records","invoices","appointments",
     "inquiries","teachers","students","admins",
     "branches","batches","boards","standards",
-    "subjects","chapters","topics","notes","inquiry_extra"
+    "subjects","chapters","topics","notes","inquiry_student"
   ]) {
     await db.query(`TRUNCATE TABLE \`${table}\``);
   }
@@ -143,7 +143,7 @@ async function seed() {
 
   /* ── 10. Inquiry Extra ───────────────────────────────── */
   await db.query(
-    `INSERT INTO inquiry_extra (name, phone, father_name, father_phone, dob, sex, email, address, standard, course, board, location, last_exam_marks, college_name, college_timing, future_plans, father_occupation, mother_occupation, sibling_name, reference, taking_coaching, hostel_required, inquiry_date)
+    `INSERT INTO inquiry_student (name, phone, father_name, father_phone, dob, sex, email, address, standard, course, board, location, last_exam_marks, college_name, college_timing, future_plans, father_occupation, mother_occupation, sibling_name, reference, taking_coaching, hostel_required, inquiry_date)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       "Arjun Singh", "9876540001", "Vikram Singh", "9876540002", "2010-05-15", "Male", "arjun@example.com", "Chinchwad, Pune", "10", "Science Tuition", "CBSE", "Chinchwad", "85%", "Vidya Niketan", "Morning", "Engineering", "Business", "Homemaker", "None", "Friend", "No", "No", new Date()

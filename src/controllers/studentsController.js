@@ -7,7 +7,7 @@ exports.getAll = async (req, res) => {
 /*    let sql = "SELECT * FROM students WHERE admin_id = ? OR admin_id = 8";
     const params = [req.admin.id]; */
 
- let sql = "SELECT * FROM students WHERE 1=1";
+ let sql = "SELECT * FROM students WHERE 1=1 AND deleted_at IS NULL";
     const params = [];
 
     if (standard) { sql += " AND standard = ?"; params.push(standard); }
@@ -31,8 +31,8 @@ exports.getAll = async (req, res) => {
 exports.getOne = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "Select * from students WHERE id = ? AND (admin_id = ? OR admin_id = 8)",
-      [req.params.id, req.admin.id]
+      "SELECT * FROM students WHERE id = ? AND deleted_at IS NULL",
+      [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ success: false, message: "Student not found" });
     res.json({ success: true, data: rows[0] });
@@ -47,9 +47,9 @@ exports.create = async (req, res) => {
     const { name, email, phone, father_name, father_phone, board, standard, course, location, institute, fee, paid_fee } = req.body;
     if (!name) return res.status(400).json({ success: false, message: "Name is required" });
 
-    if (email || phone) {
+    if ((email && email.trim() !== "") || (phone && phone.trim() !== "")) {
       const [existing] = await db.query(
-        "SELECT id FROM students WHERE email = ? OR phone = ?", 
+        "SELECT id FROM students WHERE ((email = ? AND email != '') OR (phone = ? AND phone != '')) AND deleted_at IS NULL", 
         [email || 'N/A', phone || 'N/A']
       );
       if (existing.length > 0) {
@@ -94,10 +94,10 @@ exports.update = async (req, res) => {
     const [result] = await db.query(
       `UPDATE students
        SET name=?,email=?,phone=?,father_name=?,father_phone=?,board=?,standard=?,course=?,location=?,institute=?,fee=?,paid_fee=?
-       WHERE id=? AND (admin_id = ? OR admin_id = 8)`,
+       WHERE id=?`,
       [name, email||null, phone||"", father_name||"", father_phone||"", board||"",
        standard||"", course||"", location||"", institute||"", fee||0, paid_fee||0,
-       req.params.id, req.admin.id]
+       req.params.id]
     );
     if (!result.affectedRows) return res.status(404).json({ success: false, message: "Student not found" });
     res.json({ success: true, message: "Student updated" });
@@ -110,7 +110,7 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
   try {
     const [result] = await db.query(
-      "DELETE FROM students WHERE id = ? AND (admin_id = ? OR admin_id = 8)",
+      "UPDATE students SET deleted_at = NOW() WHERE id = ? AND admin_id = ?",
       [req.params.id, req.admin.id]
     );
     if (!result.affectedRows) return res.status(404).json({ success: false, message: "Student not found" });
@@ -124,8 +124,8 @@ exports.remove = async (req, res) => {
 exports.getStudentPassword = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT phone, encrypted_password FROM students WHERE id = ? AND (admin_id = ? OR admin_id = 8)",
-      [req.params.id, req.admin.id]
+      "SELECT phone, encrypted_password FROM students WHERE id = ?",
+      [req.params.id]
     );
 
     if (!rows.length) {
@@ -143,7 +143,15 @@ exports.getStudentPassword = async (req, res) => {
     }
     
     if (!plainTextPassword) {
-      return res.status(500).json({ success: false, message: "Decryption failed. The key might have changed." });
+      // Decryption failed (key mismatch) — fall back to phone-based default
+      const phone = rows[0].phone || "";
+      const phoneLast4 = phone.length >= 4 ? phone.slice(-4) : "0000";
+      const fallback = `Student@${phoneLast4}`;
+      return res.json({ 
+        success: true, 
+        plainTextPassword: fallback,
+        warning: "Could not decrypt stored password (encryption key may have changed). Showing default password." 
+      });
     }
 
     res.json({ success: true, plainTextPassword });
@@ -156,8 +164,8 @@ exports.getStudentPassword = async (req, res) => {
 exports.adminResetPassword = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT phone FROM students WHERE id = ? AND (admin_id = ? OR admin_id = 8)",
-      [req.params.id, req.admin.id]
+      "SELECT phone FROM students WHERE id = ?",
+      [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ success: false, message: "Student not found" });
 
@@ -175,8 +183,8 @@ exports.adminResetPassword = async (req, res) => {
     const encryptedPassword = encrypt(newTempPassword);
 
     const [result] = await db.query(
-      "UPDATE students SET password = ?, encrypted_password = ?, is_first_login = TRUE WHERE id = ? AND (admin_id = ? OR admin_id = 8)",
-      [hashedPassword, encryptedPassword, req.params.id, req.admin.id]
+      "UPDATE students SET password = ?, encrypted_password = ?, is_first_login = TRUE WHERE id = ?",
+      [hashedPassword, encryptedPassword, req.params.id]
     );
 
     if (!result.affectedRows) {
