@@ -6,16 +6,18 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // Helper to fetch attendance records for a specific date and role
-const getAttendanceForDate = async (date, roleFilter = 'STUDENT') => {
+const getAttendanceForDate = async (date, roleFilter = 'STUDENT', adminId) => {
   let users = [];
   if (roleFilter === 'STUDENT') {
     const [students] = await db.query(
-      "SELECT id, name, standard, course, location, phone as contact, biometric_code FROM students WHERE deleted_at IS NULL ORDER BY name ASC"
+      "SELECT id, name, standard, course, location, phone as contact, biometric_code FROM students WHERE deleted_at IS NULL AND admin_id = ? ORDER BY name ASC",
+      [adminId]
     );
     users = students.map(s => ({ ...s, role: 'STUDENT' }));
   } else {
     const [teachers] = await db.query(
-      "SELECT id, name, phone as contact, biometric_code, location FROM teachers ORDER BY name ASC"
+      "SELECT id, name, phone as contact, biometric_code, location FROM teachers WHERE admin_id = ? ORDER BY name ASC",
+      [adminId]
     );
     users = teachers.map(t => ({ ...t, role: 'TEACHER', standard: 'Staff', location: t.location }));
   }
@@ -87,7 +89,8 @@ router.get("/", protect, authorize(["ADMIN", "TEACHER"]), async (req, res) => {
   }
 
   try {
-    const result = await getAttendanceForDate(date, role.toUpperCase());
+    const adminId = req.user.role === 'ADMIN' ? req.user.id : req.user.admin_id;
+    const result = await getAttendanceForDate(date, role.toUpperCase(), adminId);
     return res.json(result);
   } catch (err) {
     console.error("[Attendance] Fetch Error:", err.message);
@@ -108,7 +111,8 @@ router.post("/sync", protect, authorize(["ADMIN", "TEACHER"]), async (req, res) 
     await syncBiometricAttendance(date);
     
     // Retrieve the newly updated records list
-    const result = await getAttendanceForDate(date, role.toUpperCase());
+    const adminId = req.user.role === 'ADMIN' ? req.user.id : req.user.admin_id;
+    const result = await getAttendanceForDate(date, role.toUpperCase(), adminId);
     return res.json(result);
   } catch (err) {
     console.error("[Attendance] Sync Error:", err.message);
@@ -204,7 +208,8 @@ router.post("/notify-whatsapp", protect, authorize(["ADMIN", "TEACHER"]), async 
   }
 
   try {
-    const result = await getAttendanceForDate(date, role.toUpperCase());
+    const adminId = req.user.role === 'ADMIN' ? req.user.id : req.user.admin_id;
+    const result = await getAttendanceForDate(date, role.toUpperCase(), adminId);
     const absentStudents = result.records.filter(r => r.status === "Absent");
 
     res.json({
