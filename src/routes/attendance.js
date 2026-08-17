@@ -10,14 +10,14 @@ const getAttendanceForDate = async (date, roleFilter = 'STUDENT') => {
   let users = [];
   if (roleFilter === 'STUDENT') {
     const [students] = await db.query(
-      "SELECT id, name, standard, course, phone as contact, biometric_code FROM students WHERE deleted_at IS NULL ORDER BY name ASC"
+      "SELECT id, name, standard, course, location, phone as contact, biometric_code FROM students WHERE deleted_at IS NULL ORDER BY name ASC"
     );
     users = students.map(s => ({ ...s, role: 'STUDENT' }));
   } else {
     const [teachers] = await db.query(
-      "SELECT id, name, phone as contact, biometric_code FROM teachers ORDER BY name ASC"
+      "SELECT id, name, phone as contact, biometric_code, location FROM teachers ORDER BY name ASC"
     );
-    users = teachers.map(t => ({ ...t, role: 'TEACHER', standard: 'Staff', course: '' }));
+    users = teachers.map(t => ({ ...t, role: 'TEACHER', standard: 'Staff', location: t.location }));
   }
 
   // Fetch all existing attendance records from DB for this date
@@ -43,7 +43,7 @@ const getAttendanceForDate = async (date, roleFilter = 'STUDENT') => {
         name: u.name,
         contact: u.contact,
         standard: u.standard || "",
-        course: u.course || "",
+        branch: u.location || "",
         code: u.biometric_code || ""
       },
       role: u.role,
