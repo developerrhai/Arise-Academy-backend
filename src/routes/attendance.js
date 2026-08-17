@@ -43,6 +43,7 @@ const getAttendanceForDate = async (date, roleFilter = 'STUDENT') => {
         name: u.name,
         contact: u.contact,
         standard: u.standard || "",
+        course: u.course || "",
         branch: u.location || "",
         code: u.biometric_code || ""
       },
