@@ -199,6 +199,27 @@ router.put("/record", protect, authorize(["ADMIN", "TEACHER"]), async (req, res)
   }
 });
 
+// ── PUT /api/attendance/bio-code (Update Bio Code) ────────────────────────────
+router.put("/bio-code", protect, authorize(["ADMIN", "TEACHER"]), async (req, res) => {
+  const { userId, role, newBioCode } = req.body;
+
+  if (!userId || !role) {
+    return res.status(400).json({ success: false, error: "userId and role are required" });
+  }
+
+  try {
+    const targetRole = role.toUpperCase();
+    const table = targetRole === 'STUDENT' ? 'students' : 'teachers';
+    
+    await db.query(`UPDATE ${table} SET biometric_code = ? WHERE id = ?`, [newBioCode || null, userId]);
+    
+    return res.json({ success: true, message: `Biometric code updated successfully` });
+  } catch (err) {
+    console.error("[Attendance] Bio Code Update Error:", err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── POST /api/attendance/notify-whatsapp ──────────────────────────────────────
 router.post("/notify-whatsapp", protect, authorize(["ADMIN", "TEACHER"]), async (req, res) => {
   const { date, role = 'STUDENT' } = req.body;
@@ -276,6 +297,24 @@ router.get("/my-attendance", protect, authorize(["STUDENT"]), async (req, res) =
     return res.json({ success: true, data: rows });
   } catch (err) {
     console.error("[Attendance] Fetch My Attendance Error:", err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── GET /api/attendance/teacher/my-attendance (Teacher's own attendance logs) ─
+router.get("/teacher/my-attendance", protect, authorize(["TEACHER"]), async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const [rows] = await db.query(
+      `SELECT date, punch_in_time, punch_out_time, status, source 
+       FROM attendance 
+       WHERE user_id = ? AND role = 'TEACHER' 
+       ORDER BY date DESC`,
+      [teacherId]
+    );
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("[Attendance] Fetch Teacher My Attendance Error:", err.message);
     return res.status(500).json({ success: false, error: err.message });
   }
 });

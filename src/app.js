@@ -33,6 +33,7 @@ app.use("/api/inquiries/public",  require("./routes/inquiryPublic"));
 /* ── Phase 1 Routes ─────────────────────────────────────── */
 app.use("/api/auth/student", require("./routes/studentAuthRoutes"));
 app.use("/api/dashboard/student", require("./routes/studentDashboardRoutes"));
+app.use("/api/dashboard/teacher", require("./routes/teacherDashboardRoutes"));
 app.use("/api/recycle-bin", require("./routes/recycleBinRoutes"));
 app.use("/api/homework", require("./routes/homework"));
 app.use("/api/teaching-logs", require("./routes/teachingLogs"));
