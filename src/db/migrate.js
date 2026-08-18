@@ -667,6 +667,26 @@ async function ensureOtpColumns(conn) {
   } catch (err) {
     console.warn("⚠️ Could not create notifications table:", err.message);
   }
+
+  // user_notifications table (per-user inbox)
+  try {
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS user_notifications (
+        id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id     INT UNSIGNED NOT NULL,
+        user_role   VARCHAR(20) NOT NULL DEFAULT 'STUDENT',
+        title       VARCHAR(255) NOT NULL,
+        body        TEXT NOT NULL,
+        data        JSON DEFAULT NULL,
+        is_read     BOOLEAN DEFAULT FALSE,
+        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_user_role_created (user_id, user_role, created_at DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✅ user_notifications table verified/created.");
+  } catch (err) {
+    console.warn("⚠️ Could not create user_notifications table:", err.message);
+  }
 }
 
 async function migrate() {

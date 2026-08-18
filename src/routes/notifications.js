@@ -30,6 +30,32 @@ router.post("/register-token", protect, async (req, res, next) => {
 });
 
 /**
+ * @route   POST /api/notifications/deregister-token
+ * @desc    Deregister device FCM token for authenticated user (on logout)
+ * @access  Private (Student, Teacher, Admin)
+ */
+router.post("/deregister-token", protect, async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Device token is required." });
+    }
+
+    const userId = req.user.id;
+    const userRole = req.user.role || "STUDENT";
+
+    await notificationService.deregisterToken(userId, userRole, token);
+
+    res.json({
+      success: true,
+      message: "Device push token deregistered successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route   POST /api/notifications/send-single
  * @desc    Send push notification to a specific user
  * @access  Private (Admin only)
@@ -151,6 +177,52 @@ router.get("/history", protect, authorize(["ADMIN", "admin"]), async (req, res, 
       success: true,
       data: history.data,
       total: history.total,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   GET /api/notifications/my-notifications
+ * @desc    Get the logged in user's notification inbox
+ * @access  Private
+ */
+router.get("/my-notifications", protect, async (req, res, next) => {
+  try {
+    const { limit = 20, offset = 0 } = req.query;
+    const userId = req.user.id;
+    const userRole = req.user.role || "STUDENT";
+
+    const notifications = await notificationService.getUserNotifications(userId, userRole, limit, offset);
+
+    res.json({
+      success: true,
+      data: notifications.data,
+      total: notifications.total,
+      unreadCount: notifications.unreadCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PUT /api/notifications/:id/read
+ * @desc    Mark a specific notification as read
+ * @access  Private
+ */
+router.put("/:id/read", protect, async (req, res, next) => {
+  try {
+    const notificationId = req.params.id;
+    const userId = req.user.id;
+    const userRole = req.user.role || "STUDENT";
+
+    await notificationService.markAsRead(notificationId, userId, userRole);
+
+    res.json({
+      success: true,
+      message: "Notification marked as read",
     });
   } catch (error) {
     next(error);

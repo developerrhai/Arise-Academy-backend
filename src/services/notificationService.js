@@ -36,6 +36,17 @@ class NotificationService {
   }
 
   /**
+   * Remove an FCM token (e.g. on user logout).
+   */
+  async deregisterToken(userId, userRole = "STUDENT", token) {
+    const formattedRole = (userRole || "STUDENT").toUpperCase();
+    await pool.query(
+      "DELETE FROM fcm_tokens WHERE user_id = ? AND user_role = ? AND token = ?",
+      [userId, formattedRole, token]
+    );
+  }
+
+  /**
    * Internal method to log the notification to DB.
    */
   async _logNotification(
@@ -80,6 +91,12 @@ class NotificationService {
   async sendToUser(userId, userRole = "STUDENT", title, body, sentBy = null, sentByRole = "ADMIN", data = {}) {
     const formattedRole = (userRole || "STUDENT").toUpperCase();
 
+    // Save to user inbox
+    await pool.query(
+      "INSERT INTO user_notifications (user_id, user_role, title, body, data) VALUES (?, ?, ?, ?, ?)",
+      [userId, formattedRole, title, body, JSON.stringify(data || {})]
+    );
+
     const [tokens] = await pool.query(
       "SELECT token FROM fcm_tokens WHERE user_id = ? AND user_role = ?",
       [userId, formattedRole]
@@ -121,6 +138,19 @@ class NotificationService {
    */
   async sendBulk(targetRole = "STUDENT", title, body, sentBy = null, sentByRole = "ADMIN", data = {}) {
     const formattedRole = (targetRole || "STUDENT").toUpperCase();
+
+    // Save to user inbox for all matched users
+    const dataStr = JSON.stringify(data || {});
+    if (formattedRole === "STUDENT") {
+      await pool.query("INSERT INTO user_notifications (user_id, user_role, title, body, data) SELECT id, 'STUDENT', ?, ?, ? FROM students WHERE deleted_at IS NULL", [title, body, dataStr]);
+    } else if (formattedRole === "TEACHER") {
+      await pool.query("INSERT INTO user_notifications (user_id, user_role, title, body, data) SELECT id, 'TEACHER', ?, ?, ? FROM teachers", [title, body, dataStr]);
+    } else if (formattedRole === "ADMIN") {
+      await pool.query("INSERT INTO user_notifications (user_id, user_role, title, body, data) SELECT id, 'ADMIN', ?, ?, ? FROM admins", [title, body, dataStr]);
+    } else if (formattedRole === "ALL") {
+      await pool.query("INSERT INTO user_notifications (user_id, user_role, title, body, data) SELECT id, 'STUDENT', ?, ?, ? FROM students WHERE deleted_at IS NULL", [title, body, dataStr]);
+      await pool.query("INSERT INTO user_notifications (user_id, user_role, title, body, data) SELECT id, 'TEACHER', ?, ?, ? FROM teachers", [title, body, dataStr]);
+    }
 
     let sql = "SELECT f.token FROM fcm_tokens f";
     const params = [];
@@ -173,6 +203,15 @@ class NotificationService {
 
     if (!Array.isArray(userIds) || userIds.length === 0) {
       throw new Error("Filtered targeting requires an array of userIds.");
+    }
+
+    // Save to user inbox for each targeted user
+    const inboxData = userIds.map((id) => [id, targetRole, title, body, JSON.stringify(data || {})]);
+    if (inboxData.length > 0) {
+      await pool.query(
+        "INSERT INTO user_notifications (user_id, user_role, title, body, data) VALUES ?",
+        [inboxData]
+      );
     }
 
     const [rows] = await pool.query(
@@ -286,6 +325,52 @@ class NotificationService {
       data: rows,
       total,
     };
+  }
+
+  /**
+   * Fetch a user's notification inbox.
+   */
+  async getUserNotifications(userId, userRole = "STUDENT", limit = 20, offset = 0) {
+    const formattedRole = (userRole || "STUDENT").toUpperCase();
+    const numericLimit = parseInt(limit) || 20;
+    const numericOffset = parseInt(offset) || 0;
+
+    const [rows] = await pool.query(
+      `SELECT * FROM user_notifications 
+       WHERE user_id = ? AND user_role = ? 
+       ORDER BY created_at DESC 
+       LIMIT ? OFFSET ?`,
+      [userId, formattedRole, numericLimit, numericOffset]
+    );
+
+    const [countResult] = await pool.query(
+      "SELECT COUNT(id) as total FROM user_notifications WHERE user_id = ? AND user_role = ?",
+      [userId, formattedRole]
+    );
+    const total = countResult[0]?.total || 0;
+
+    const [unreadCountResult] = await pool.query(
+      "SELECT COUNT(id) as unread FROM user_notifications WHERE user_id = ? AND user_role = ? AND is_read = FALSE",
+      [userId, formattedRole]
+    );
+    const unreadCount = unreadCountResult[0]?.unread || 0;
+
+    return {
+      data: rows,
+      total,
+      unreadCount
+    };
+  }
+
+  /**
+   * Mark a specific notification as read.
+   */
+  async markAsRead(notificationId, userId, userRole = "STUDENT") {
+    const formattedRole = (userRole || "STUDENT").toUpperCase();
+    await pool.query(
+      "UPDATE user_notifications SET is_read = TRUE WHERE id = ? AND user_id = ? AND user_role = ?",
+      [notificationId, userId, formattedRole]
+    );
   }
 }
 
