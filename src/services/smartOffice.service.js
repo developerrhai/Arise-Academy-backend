@@ -9,8 +9,8 @@ const getSmartOfficeConfig = () => {
   const isConfigured = !!(baseUrl && apiKey && serialNumber);
 
   return {
-    baseUrl: baseUrl || "http://65.2.70.49",
-    apiKey: apiKey || "371114072602",
+    baseUrl: baseUrl && baseUrl !== "http://your-smartoffice-ip-or-domain" ? baseUrl : "http://15.252.103.121",
+    apiKey: apiKey && apiKey !== "your_smartoffice_api_key_here" ? apiKey : "371114072602",
     serialNumber: serialNumber || "", // Kept empty if not strictly needed
     isConfigured
   };
@@ -38,16 +38,12 @@ async function fetchBiometricLogs(fromDate, toDate) {
   const url = `${config.baseUrl}/api/v2/WebAPI/GetDeviceLogs?${params}`;
   console.log(`[SmartOffice] Fetching device logs from: ${url}`);
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const axios = require("axios");
 
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) {
-      throw new Error(`Smart Office API responded with HTTP ${res.status}`);
-    }
+    const res = await axios.get(url, { timeout: 15000 });
+    const data = res.data;
 
-    const data = await res.json();
     if (!Array.isArray(data)) {
       if (data?.status === false) {
         throw new Error(data.message || "Smart Office API Error response");
@@ -59,8 +55,6 @@ async function fetchBiometricLogs(fromDate, toDate) {
   } catch (error) {
     console.error("[SmartOffice] Fetch logs failed:", error.message);
     throw error;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
