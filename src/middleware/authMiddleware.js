@@ -29,6 +29,11 @@ const protect = async (req, res, next) => {
 
       req.user = { ...rows[0], role: upperRole };
       
+      // For Arise Academy (White-label single tenant), all admins share the same data
+      if (upperRole === 'ADMIN') {
+        req.user.id = 28;
+      }
+      
       next();
     } catch (error) {
       console.error(error);
