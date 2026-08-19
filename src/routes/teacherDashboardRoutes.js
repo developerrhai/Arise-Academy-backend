@@ -4,5 +4,6 @@ const { getTeacherDashboard } = require('../controllers/teacherDashboardControll
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.get('/', protect, authorize(['TEACHER']), getTeacherDashboard);
+router.get('', protect, authorize(['TEACHER']), getTeacherDashboard);
 
 module.exports = router;

@@ -122,6 +122,10 @@ const PORT = process.env.PORT || 5001;
     const socketConfig = require("./config/socket");
     socketConfig.init(server);
 
+    // Initialize Firebase Admin SDK
+    const { initFirebase } = require("./config/firebase");
+    initFirebase();
+
     // Start Smart Office background watcher
     const { startWatcher } = require("./services/smartOfficeWatcher");
     startWatcher();

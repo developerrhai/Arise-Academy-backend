@@ -90,13 +90,13 @@ exports.create = async (req, res) => {
 /* PUT /api/students/:id */
 exports.update = async (req, res) => {
   try {
-    const { name, email, phone, father_name, father_phone, board, standard, course, location, institute, fee, paid_fee } = req.body;
+    const { name, email, phone, father_name, father_phone, board, standard, course, location, institute, fee, paid_fee, biometric_code } = req.body;
     const [result] = await db.query(
       `UPDATE students
-       SET name=?,email=?,phone=?,father_name=?,father_phone=?,board=?,standard=?,course=?,location=?,institute=?,fee=?,paid_fee=?
+       SET name=?,email=?,phone=?,father_name=?,father_phone=?,board=?,standard=?,course=?,location=?,institute=?,fee=?,paid_fee=?,biometric_code=?
        WHERE id=?`,
       [name, email||null, phone||"", father_name||"", father_phone||"", board||"",
-       standard||"", course||"", location||"", institute||"", fee||0, paid_fee||0,
+       standard||"", course||"", location||"", institute||"", fee||0, paid_fee||0, biometric_code||null,
        req.params.id]
     );
     if (!result.affectedRows) return res.status(404).json({ success: false, message: "Student not found" });

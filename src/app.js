@@ -10,7 +10,12 @@ const app = express();
 
 /* ── Middleware ─────────────────────────────────────────── */
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "https://financereactjs.vercel.app/",
+  origin: [
+    "https://merit-home.vercel.app",
+    "https://arise-academy-frontend.vercel.app",
+    "https://financereactjs.vercel.app",
+    "http://localhost:3000"
+  ],
   credentials: true,
 }));
 app.use(express.json());
@@ -25,21 +30,23 @@ app.use("/api/inquiries",    require("./routes/inquiries"));
 app.use("/api/appointments", require("./routes/appointments"));
 app.use("/api/invoices",     require("./routes/invoices"));
 app.use("/api/finance",      require("./routes/finance"));
-app.use("/api/dashboard",    require("./routes/dashboard"));
 app.use("/api/teacher-updates/public", require("./routes/teacherUpdatePublic"));
 app.use("/api/admissions/public",  require("./routes/admissionPublic"));
 app.use("/api/inquiries/public",  require("./routes/inquiryPublic"));
 
 /* ── Phase 1 Routes ─────────────────────────────────────── */
 app.use("/api/auth/student", require("./routes/studentAuthRoutes"));
-app.use("/api/dashboard/student", require("./routes/studentDashboardRoutes"));
-app.use("/api/dashboard/teacher", require("./routes/teacherDashboardRoutes"));
+app.use('/api/dashboard/student', require('./routes/studentDashboardRoutes'));
+app.get('/api/dashboard/teacher/debug', (req, res) => res.json({ debug: true }));
+app.use('/api/dashboard/teacher', require('./routes/teacherDashboardRoutes'));
+app.use('/api/dashboard', require('./routes/dashboard'));
 app.use("/api/recycle-bin", require("./routes/recycleBinRoutes"));
 app.use("/api/homework", require("./routes/homework"));
 app.use("/api/teaching-logs", require("./routes/teachingLogs"));
 app.use("/api/chat-groups", require("./routes/chatGroups"));
 app.use("/api/chat-messages", require("./routes/chatMessages"));
 app.use("/api/notifications", require("./routes/notifications"));
+app.use("/api/attendance", require("./routes/attendance"));
 
 /* ── Health check ───────────────────────────────────────── */
 app.get("/api/health", (_req, res) =>
