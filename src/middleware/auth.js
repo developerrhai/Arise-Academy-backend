@@ -10,6 +10,11 @@ module.exports = function authMiddleware(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.admin = decoded;   // { id, email, name }
+    
+    // For Arise Academy (White-label single tenant), all admins share the same data
+    // Admin ID 28 is the master organization ID containing all students/teachers.
+    req.admin.id = 28; 
+    
     next();
   } catch {
     return res.status(401).json({ success: false, message: "Invalid or expired token" });
