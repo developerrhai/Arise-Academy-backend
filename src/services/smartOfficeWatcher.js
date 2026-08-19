@@ -186,13 +186,13 @@ async function checkNewPunches() {
 }
 
 function startWatcher() {
-  // Run every 30 seconds
-  setInterval(checkNewPunches, 30000);
+  // Run every 1 minute
+  setInterval(checkNewPunches, 60000);
 
   // Run once on startup after a short delay
   setTimeout(checkNewPunches, 5000);
 
-  console.log("[SmartOfficeWatcher] ✅ Attendance watcher started (polling every 30s)");
+  console.log("[SmartOfficeWatcher] ✅ Attendance watcher started (polling every 1m)");
 }
 
 module.exports = { startWatcher, checkNewPunches };
