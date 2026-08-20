@@ -170,11 +170,11 @@ exports.editHomework = async (req, res) => {
 exports.getHomeworkByBatch = async (req, res) => {
   try {
     const { batch } = req.params;
-    const { id: userId, role, standard, course } = req.user;
+    const { id: userId, role, standard, board } = req.user;
 
     // Enforce student batch scoping securely to prevent IDOR via substring match
     if (role === 'STUDENT') {
-      const studentBatch = `${standard || ''} ${course || ''}`.trim().toLowerCase();
+      const studentBatch = `${standard || ''} ${board || ''}`.trim().toLowerCase();
       const requestedBatch = batch.trim().toLowerCase();
       
       // Split into exact tokens instead of using `.includes` to prevent "1" matching "10"

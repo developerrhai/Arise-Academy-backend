@@ -31,8 +31,8 @@ const getStudentDashboard = async (req, res) => {
     let classUpdatesTotal = 0;
     try {
       let batchStr = profile.standard || "";
-      if (profile.course) {
-        batchStr += " " + profile.course;
+      if (profile.board) {
+        batchStr += " " + profile.board;
       }
       batchStr = batchStr.trim();
       
