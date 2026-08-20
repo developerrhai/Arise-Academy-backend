@@ -85,7 +85,7 @@ module.exports = {
       // 3. Handle sending a message
       socket.on("send_message", async (data, callback) => {
         try {
-          const { groupId, messageText } = data;
+          const { groupId, messageText, attachmentUrl = null, attachmentName = null, attachmentType = null } = data;
           const { id: userId, role } = socket.user;
           const upperRole = role ? role.toUpperCase() : '';
 
@@ -111,9 +111,9 @@ module.exports = {
 
           // Insert into DB
           const [result] = await db.query(
-            `INSERT INTO chat_messages (group_id, sender_id, sender_role, sender_name, message_text) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [groupId, userId, upperRole, senderName, messageText]
+            `INSERT INTO chat_messages (group_id, sender_id, sender_role, sender_name, message_text, attachment_url, attachment_name, attachment_type) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [groupId, userId, upperRole, senderName, messageText, attachmentUrl, attachmentName, attachmentType]
           );
 
           const messageObj = {
@@ -123,6 +123,9 @@ module.exports = {
             sender_role: upperRole,
             sender_name: senderName,
             message_text: messageText,
+            attachment_url: attachmentUrl,
+            attachment_name: attachmentName,
+            attachment_type: attachmentType,
             created_at: new Date().toISOString()
           };
 

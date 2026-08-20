@@ -1,4 +1,6 @@
 const db = require("../config/db");
+const { s3 } = require("../config/s3");
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 // ── 1. GET MESSAGE HISTORY ─────────────────────────────
 exports.getMessages = async (req, res) => {
@@ -22,7 +24,7 @@ exports.getMessages = async (req, res) => {
 
     // Fetch messages (newest first, but we usually display oldest first, so frontend handles reverse)
     const [messages] = await db.query(
-      `SELECT id, group_id, sender_id, sender_role, sender_name, message_text, created_at 
+      `SELECT id, group_id, sender_id, sender_role, sender_name, message_text, attachment_url, attachment_name, attachment_type, created_at 
        FROM chat_messages 
        WHERE group_id = ? AND is_deleted = FALSE 
        ORDER BY created_at DESC 
@@ -65,3 +67,57 @@ exports.createMessage = async (req, res) => {
     res.status(500).json({ success: false, message: "An internal server error occurred." });
   }
 };
+
+// ── 3. DELETE MESSAGE (ADMIN ONLY) ───────────────────────
+exports.deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { role } = req.user;
+
+    if (role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: "Only admins can delete messages" });
+    }
+
+    // Check if message exists and get attachment info
+    const [rows] = await db.query(`SELECT group_id, attachment_url FROM chat_messages WHERE id = ?`, [messageId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    const { group_id, attachment_url } = rows[0];
+
+    // If there is an attachment, delete it from S3
+    if (attachment_url) {
+      try {
+        // Extract the Key from the URL
+        // URL format: https://[bucket].s3.[region].amazonaws.com/[key]
+        const urlParts = attachment_url.split('.amazonaws.com/');
+        if (urlParts.length > 1) {
+          const key = decodeURIComponent(urlParts[1]);
+          const command = new DeleteObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: key
+          });
+          await s3.send(command);
+        }
+      } catch (s3Error) {
+        console.error("Failed to delete from S3:", s3Error);
+        // Continue to delete from DB even if S3 fails
+      }
+    }
+
+    // Hard delete from DB
+    await db.query(`DELETE FROM chat_messages WHERE id = ?`, [messageId]);
+
+    // Emit socket event to all clients to remove the message
+    const { getIO } = require("../config/socket");
+    const io = getIO();
+    io.to(`group_${group_id}`).emit("delete_message", { messageId: parseInt(messageId), groupId: group_id });
+
+    res.json({ success: true, message: "Message deleted successfully" });
+  } catch (err) {
+    console.error("Delete Message Error:", err);
+    res.status(500).json({ success: false, message: "An internal server error occurred." });
+  }
+};
+

@@ -256,7 +256,7 @@ class NotificationService {
 
       try {
         if (admin && typeof admin.messaging === "function") {
-          const response = await admin.messaging().sendMulticast(message);
+          const response = await admin.messaging().sendEachForMulticast(message);
           successCount += response.successCount;
           failureCount += response.failureCount;
 

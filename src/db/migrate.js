@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   due_date     DATE          DEFAULT NULL,
   status       ENUM('Paid','Partial','Pending','Overdue') NOT NULL DEFAULT 'Pending',
   description  VARCHAR(500)  DEFAULT '',
+  install_date DATE          DEFAULT NULL,
+  transaction_type VARCHAR(50) DEFAULT 'Cash',
   created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (admin_id)   REFERENCES admins(id)   ON DELETE CASCADE,
@@ -426,6 +428,22 @@ async function ensureOtpColumns(conn) {
       console.warn("⚠️ Could not run ALTER TABLE on teachers:", err.message);
     }
   }
+
+  try {
+    await conn.query(`
+      ALTER TABLE invoices 
+      ADD COLUMN install_date DATE DEFAULT NULL,
+      ADD COLUMN transaction_type VARCHAR(50) DEFAULT 'Cash'
+    `);
+    console.log("✅ Ensured install_date & transaction_type columns exist in invoices table");
+  } catch (err) {
+    if (err.code === "ER_DUP_FIELDNAME" || err.message.includes("Duplicate column name")) {
+      console.log("✅ install_date & transaction_type already exist in invoices table");
+    } else {
+      console.warn("⚠️ Could not run ALTER TABLE on invoices:", err.message);
+    }
+  }
+
 
   // Phase 1 Additions for Students
   try {
